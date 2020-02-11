@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gojs/1.8.2/go.js"></script>
+    <script>
+      function init() {
+        var $ = go.GraphObject.make;
+
+        myDiagram =
+          $(go.Diagram, "myDiagramDiv",  // Diagram refers to its DIV HTML element by id
+            {
+              initialContentAlignment: go.Spot.Center,
+              maxSelectionCount: 1, // no more than 1 element can be selected at a time
+              layout: $(go.LayeredDigraphLayout),
+              //initialAutoScale: go.Diagram.UniformToFill,
+            });
+        // define the node template
+        myDiagram.nodeTemplate =
+          $(go.Node, "Auto",
+            //new go.Binding("location", "loc"),
+            {   locationSpot: go.Spot.Center,
+                toEndSegmentLength: 30, fromEndSegmentLength: 30,
+                fromSpot: go.Spot.Right, // links going out from right
+                toSpot: go.Spot.Left, // links coming into from left
+            },
+            $(go.Shape, "Rectangle",
+              {
+                name: "OBJSHAPE",
+                fill: "white"
+              }),
+            $(go.TextBlock,
+              { margin: 4 },
+              new go.Binding("text", "nick")),
+            {
+              toolTip:  //  define a tooltip for each node that displays its information
+                $(go.Adornment, "Auto",
+                  $(go.Shape, { fill: "#EFEFCC" }),
+                  $(go.TextBlock, { margin: 4 },
+                    new go.Binding("text", "id"))
+                )
+            }
+          );
+
+        myDiagram.nodeTemplateMap.add("hdfs",
+          $(go.Node, "Auto",
+            //new go.Binding("location", "loc"),
+            {   locationSpot: go.Spot.Center,
+                toEndSegmentLength: 30, fromEndSegmentLength: 30,
+                fromSpot: go.Spot.Right, // links going out from right
+                toSpot: go.Spot.Left, // links coming into from left
+            },
+            $(go.Shape, "Rectangle",
+              {
+                name: "OBJSHAPE",
+                fill: "white",
+                stroke: "orange",
+                strokeWidth: 4,
+              }),
+            $(go.TextBlock,
+              { margin: 4 },
+              new go.Binding("text", "nick")),
+            {
+              toolTip:  //  define a tooltip for each node that displays its information
+                $(go.Adornment, "Auto",
+                  $(go.Shape, { fill: "#EFEFCC" }),
+                  $(go.TextBlock, { margin: 4 },
+                    new go.Binding("text", "id"))
+                )
+            }
+          )
+        );
+
+
+        // define the link template
+        myDiagram.linkTemplate =
+          $(go.Link,
+            {
+              selectionAdornmentTemplate:
+                $(go.Adornment,
+                  $(go.Shape,
+                    { isPanelMain: true, stroke: "dodgerblue", strokeWidth: 3 }),
+                  $(go.Shape,
+                    { toArrow: "Standard", fill: "dodgerblue", stroke: null, scale: 1 })
+                ),
+              routing: go.Link.Normal,
+              curve: go.Link.Bezier,
+              toShortLength: 2
+            },
+            $(go.Shape,  //  the link shape
+              { name: "OBJSHAPE" }),
+            $(go.Shape,  //  the arrowhead
+              { name: "ARWSHAPE", toArrow: "Standard" }),
+            {
+              toolTip:  //  define a tooltip for each link that displays its information
+                $(go.Adornment, "Auto",
+                  $(go.Shape, { fill: "#EFEFCC" }),
+                  $(go.TextBlock, { margin: 4 },
+                    new go.Binding("text",  "from"))
+                )
+            }
+          );
+        // define the group template
+        myDiagram.groupTemplateMap.add("flumeAgent",
+          $(go.Group, "Spot",
+            {
+              selectionAdornmentTemplate: // adornment when a group is selected
+                $(go.Adornment, "Auto",
+                  $(go.Shape, "Rectangle",
+                    { fill: null, stroke: "dodgerblue", strokeWidth: 3 }),
+                  $(go.Placeholder)
+                ),
+              toEndSegmentLength: 30, fromEndSegmentLength: 30,
+			  layout:
+                $(go.GridLayout,
+                    { wrappingColumn: 3, alignment: go.GridLayout.Position})
+
+            },
+            $(go.Panel, "Auto",
+              $(go.Shape, "Rectangle",
+                {
+                  name: "OBJSHAPE",
+                  //parameter1: 14,
+                  fill: "rgba(255,255,0,0.10)"
+                },
+                new go.Binding("desiredSize", "ds")),
+              $(go.Placeholder,
+                { padding: 16 })
+            ),
+            $(go.TextBlock,
+              {
+                name: "GROUPTEXT",
+                alignment: go.Spot.TopCenter,
+                //alignmentFocus: new go.Spot(0,0,0,0),
+                alignmentFocus: go.Spot.TopCenter,
+                font: "Bold 10pt Sans-Serif"
+              },
+              new go.Binding("text", "nick")),
+            {
+              toolTip:  //  define a tooltip for each group that displays its information
+                $(go.Adornment, "Auto",
+                  $(go.Shape, { fill: "#EFEFCC" }),
+                  $(go.TextBlock, { margin: 4 },
+                    new go.Binding("text",  "id"))
+                )
+            }
+          )
+        );
+        myDiagram.groupTemplateMap.add("flumeComponent",
+          $(go.Group, "Spot",
+            {
+              selectionAdornmentTemplate: // adornment when a group is selected
+                $(go.Adornment, "Auto",
+                  $(go.Shape, "Rectangle",
+                    { fill: null, stroke: "dodgerblue", strokeWidth: 3 }),
+                  $(go.Placeholder)
+                ),
+              toEndSegmentLength: 30, fromEndSegmentLength: 30,
+			  layout:
+                $(go.GridLayout,
+                    { wrappingColumn: 1, alignment: go.GridLayout.Position,
+                      cellSize: new go.Size(1, 1), spacing: new go.Size(4, 4) })
+
+            },
+            $(go.Panel, "Auto",
+              $(go.Shape, "Rectangle",
+                {
+                  name: "OBJSHAPE",
+                  //parameter1: 14,
+                  fill: "rgba(255,255,0,0.10)"
+                },
+                new go.Binding("desiredSize", "ds")),
+              $(go.Placeholder,
+                { padding: 16 })
+            ),
+            $(go.TextBlock,
+              {
+                name: "GROUPTEXT",
+                alignment: go.Spot.TopCenter,
+                //alignmentFocus: new go.Spot(0,0,0,0),
+                alignmentFocus: go.Spot.TopCenter,
+                font: "Bold 10pt Sans-Serif"
+              },
+              new go.Binding("text", "nick")),
+            {
+              toolTip:  //  define a tooltip for each group that displays its information
+                $(go.Adornment, "Auto",
+                  $(go.Shape, { fill: "#EFEFCC" }),
+                  $(go.TextBlock, { margin: 4 },
+                    new go.Binding("text",  "id"))
+                )
+            }
+          )
+        );
+
+        myDiagram.groupTemplateMap.add("kafka",
+          $(go.Group, "Spot",
+            {
+              //selectionAdornmentTemplate: // adornment when a group is selected
+              //  $(go.Adornment, "Auto",
+              //    $(go.Shape, "Rectangle",
+              //      { fill: null, stroke: "dodgerblue", strokeWidth: 3 }),
+              //    //$(go.Placeholder)
+              //  ),
+              //toEndSegmentLength: 30, fromEndSegmentLength: 30,
+			  layout:
+                $(go.GridLayout,
+                    { wrappingColumn: 1, alignment: go.GridLayout.Position,
+                      cellSize: new go.Size(1, 1), spacing: new go.Size(4, 4) })
+
+            },
+            $(go.Panel, "Auto",
+              $(go.Shape, "Rectangle",
+                {
+                  name: "OBJSHAPE",
+                  //parameter1: 14,
+                  fill: "rgba(255,0,0,0.10)"
+                },
+                new go.Binding("desiredSize", "ds")),
+              $(go.Placeholder,
+                { padding: 16 })
+            ),
+            $(go.TextBlock,
+              {
+                name: "GROUPTEXT",
+                alignment: go.Spot.TopCenter,
+                //alignmentFocus: new go.Spot(0,0,0,0),
+                alignmentFocus: go.Spot.TopCenter,
+                font: "Bold 10pt Sans-Serif"
+              },
+              new go.Binding("text", "nick")),
+            {
+              fromSpot: go.Spot.Right, // links going out from right
+              toSpot: go.Spot.Left, // links coming into from left
+              toolTip:  //  define a tooltip for each group that displays its information
+                $(go.Adornment, "Auto",
+                  $(go.Shape, { fill: "#EFEFCC" }),
+                  $(go.TextBlock, { margin: 4 },
+                    new go.Binding("text",  "id"))
+                )
+            }
+          )
+        );
+
+        myDiagram.groupTemplateMap.add("hive",
+          $(go.Group, "Spot",
+            {
+              //selectionAdornmentTemplate: // adornment when a group is selected
+              //  $(go.Adornment, "Auto",
+              //    $(go.Shape, "Rectangle",
+              //      { fill: null, stroke: "dodgerblue", strokeWidth: 3 }),
+              //    //$(go.Placeholder)
+              //  ),
+              //toEndSegmentLength: 30, fromEndSegmentLength: 30,
+			  layout:
+                $(go.GridLayout,
+                    { wrappingColumn: 1, alignment: go.GridLayout.Position,
+                      cellSize: new go.Size(1, 1), spacing: new go.Size(4, 4) })
+
+            },
+            $(go.Panel, "Auto",
+              $(go.Shape, "Rectangle",
+                {
+                  name: "OBJSHAPE",
+                  //parameter1: 14,
+                  fill: "rgba(128,128,0,0.10)"
+                },
+                new go.Binding("desiredSize", "ds")),
+              $(go.Placeholder,
+                { padding: 16 })
+            ),
+            $(go.TextBlock,
+              {
+                name: "GROUPTEXT",
+                alignment: go.Spot.TopCenter,
+                //alignmentFocus: new go.Spot(0,0,0,0),
+                alignmentFocus: go.Spot.TopCenter,
+                font: "Bold 10pt Sans-Serif"
+              },
+              new go.Binding("text", "nick")),
+            {
+              fromSpot: go.Spot.Right, // links going out from right
+              toSpot: go.Spot.Left, // links coming into from left
+              toolTip:  //  define a tooltip for each group that displays its information
+                $(go.Adornment, "Auto",
+                  $(go.Shape, { fill: "#EFEFCC" }),
+                  $(go.TextBlock, { margin: 4 },
+                    new go.Binding("text",  "id"))
+                )
+            }
+          )
+        );
+
+        myDiagram.groupTemplateMap.add("hdfs",
+          $(go.Group, "Spot",
+            {
+              //selectionAdornmentTemplate: // adornment when a group is selected
+              //  $(go.Adornment, "Auto",
+              //    $(go.Shape, "Rectangle",
+              //      { fill: null, stroke: "dodgerblue", strokeWidth: 3 }),
+              //    //$(go.Placeholder)
+              //  ),
+              //toEndSegmentLength: 30, fromEndSegmentLength: 30,
+			  layout:
+                $(go.GridLayout,
+                    { wrappingColumn: 1, alignment: go.GridLayout.Position,
+                      cellSize: new go.Size(1, 1), spacing: new go.Size(4, 4) })
+
+            },
+            $(go.Panel, "Auto",
+              $(go.Shape, "Rectangle",
+                {
+                  name: "OBJSHAPE",
+                  //parameter1: 14,
+                  fill: "rgba(128,0,0,0.10)"
+                },
+                new go.Binding("desiredSize", "ds")),
+              $(go.Placeholder,
+                { padding: 16 })
+            ),
+            $(go.TextBlock,
+              {
+                name: "GROUPTEXT",
+                alignment: go.Spot.TopCenter,
+                //alignmentFocus: new go.Spot(0,0,0,0),
+                alignmentFocus: go.Spot.TopCenter,
+                font: "Bold 10pt Sans-Serif"
+              },
+              new go.Binding("text", "nick")),
+            {
+              fromSpot: go.Spot.Right, // links going out from right
+              toSpot: go.Spot.Left, // links coming into from left
+              toolTip:  //  define a tooltip for each group that displays its information
+                $(go.Adornment, "Auto",
+                  $(go.Shape, { fill: "#EFEFCC" }),
+                  $(go.TextBlock, { margin: 4 },
+                    new go.Binding("text",  "id"))
+                )
+            }
+          )
+        );
+
+        // add nodes, including groups, and links to the model
+        var nodeDataArray = [ // node data
+          // agentZhe800Log_Rtm
+          { id: "Flume.agentZhe800Log_Rtm", nick: "agentZhe800Log_Rtm", isGroup: true, type: "flumeAgent" },
+          { id: "Flume.agentZhe800Log_Rtm.sources", nick: "sources", isGroup: true, group: "Flume.agentZhe800Log_Rtm",  type: "flumeComponent"},
+          { id: "Flume.agentZhe800Log_Rtm.channels", nick: "channels", isGroup: true, group: "Flume.agentZhe800Log_Rtm", type: "flumeComponent" },
+          { id: "Flume.agentZhe800Log_Rtm.sinks", nick: "sinks", isGroup: true, group: "Flume.agentZhe800Log_Rtm", type: "flumeComponent" },
+          { id: "Flume.agentZhe800Log_Rtm.sources.src_kafka", nick: "src_kafka", group: "Flume.agentZhe800Log_Rtm.sources"},
+          { id: "Flume.agentZhe800Log_Rtm.channels.ch_mem", nick: "ch_mem", group: "Flume.agentZhe800Log_Rtm.channels"},
+          { id: "Flume.agentZhe800Log_Rtm.channels.ch_smem-1", nick: "ch_smem", group: "Flume.agentZhe800Log_Rtm.channels"},
+          { id: "Flume.agentZhe800Log_Rtm.channels.ch_smem-2", nick: "ch_smem", group: "Flume.agentZhe800Log_Rtm.channels"},
+          { id: "Flume.agentZhe800Log_Rtm.channels.ch_file", nick: "ch_file", group: "Flume.agentZhe800Log_Rtm.channels"},
+          { id: "Flume.agentZhe800Log_Rtm.sinks.sink_hdfs", nick: "sink_hdfs", group: "Flume.agentZhe800Log_Rtm.sinks"},
+          { id: "Flume.agentZhe800Log_Rtm.sinks.sink_hive", nick: "sink_hive", group: "Flume.agentZhe800Log_Rtm.sinks"},
+          { id: "Flume.agentZhe800Log_Rtm.sinks.sink_kafka", nick: "sink_kafka", group: "Flume.agentZhe800Log_Rtm.sinks"},
+          { id: "Flume.agentZhe800Log_Rtm.sinks.sink_monitor", nick: "sink_monitor", group: "Flume.agentZhe800Log_Rtm.sinks"},
+
+          // agentZhe800Log_Ori
+          { id: "Flume.agentZhe800Log_Ori", nick: "agentZhe800Log_Ori", isGroup: true, type: "flumeAgent" },
+          { id: "Flume.agentZhe800Log_Ori.sources", nick: "sources", isGroup: true, group: "Flume.agentZhe800Log_Ori",  type: "flumeComponent"},
+          { id: "Flume.agentZhe800Log_Ori.channels", nick: "channels", isGroup: true, group: "Flume.agentZhe800Log_Ori", type: "flumeComponent" },
+          { id: "Flume.agentZhe800Log_Ori.sinks", nick: "sinks", isGroup: true, group: "Flume.agentZhe800Log_Ori", type: "flumeComponent" },
+          { id: "Flume.agentZhe800Log_Ori.sources.src_exec", nick: "src_exec", group: "Flume.agentZhe800Log_Ori.sources"},
+          { id: "Flume.agentZhe800Log_Ori.channels.ch_smem", nick: "ch_smem", group: "Flume.agentZhe800Log_Ori.channels"},
+          { id: "Flume.agentZhe800Log_Ori.sinks.sink_kafka", nick: "sink_kafka", group: "Flume.agentZhe800Log_Ori.sinks"},
+
+          // agentZhe800Log_Monitor
+          { id: "Flume.agentZhe800Log_Monitor", nick: "agentZhe800Log_Monitor", isGroup: true, type: "flumeAgent" },
+          { id: "Flume.agentZhe800Log_Monitor.sources", nick: "sources", isGroup: true, group: "Flume.agentZhe800Log_Monitor",  type: "flumeComponent"},
+          { id: "Flume.agentZhe800Log_Monitor.channels", nick: "channels", isGroup: true, group: "Flume.agentZhe800Log_Monitor", type: "flumeComponent" },
+          { id: "Flume.agentZhe800Log_Monitor.sinks", nick: "sinks", isGroup: true, group: "Flume.agentZhe800Log_Monitor", type: "flumeComponent" },
+          { id: "Flume.agentZhe800Log_Monitor.sources.src_kafka", nick: "src_kafka", group: "Flume.agentZhe800Log_Monitor.sources"},
+          { id: "Flume.agentZhe800Log_Monitor.channels.ch_mem", nick: "ch_mem", group: "Flume.agentZhe800Log_Monitor.channels"},
+          { id: "Flume.agentZhe800Log_Monitor.sinks.sink_kafka", nick: "sink_kafka", group: "Flume.agentZhe800Log_Monitor.sinks"},
+
+          // kafka nginx_zhe800_log
+          { id: "Kafka.bigpipe", nick: "bigpipe", isGroup: true, type: "kafka" },
+          { id: "Kafka.bigpipe.nginx_zhe800_log", nick: "nginx_zhe800_log", isGroup: true, group: "Kafka.bigpipe", type: "kafka" },
+          { id: "Kafka.bigpipe.nginx_zhe800_log.flume_realtime", nick: "flume_realtime", group: "Kafka.bigpipe.nginx_zhe800_log"},
+          { id: "Kafka.bigpipe.nginx_zhe800_log.monitor", nick: "monitor", group: "Kafka.bigpipe.nginx_zhe800_log"},
+          { id: "Kafka.bigpipe.real_time_log", nick: "real_time_log", isGroup: true, group: "Kafka.bigpipe",  type: "kafka" },
+
+          // kafka arch_nginx_monitor
+          { id: "Kafka.bigpipe.arch_nginx_monitor", nick: "arch_nginx_monitor", isGroup: true, group: "Kafka.bigpipe",  type: "kafka" },
+
+          // hdfs /input/woss/hive/test/partitionmonth=${xx}/partitiontime=${xx}
+          { id: "HDFS.NS1", nick: "NS1", isGroup: true, type: "hdfs"},
+          { id: "HDFS.NS1./input/woss/hive/test/partitionmonth=${yearmonth}/partitiontime=${date}", nick: "/input/woss/hive/test/partitionmonth=${yearmonth}/partitiontime=${date}", group: "HDFS.NS1"},
+          { id: "HDFS.NS1./input/woss/hive/test1/partitiontime=${date}", nick: "/input/woss/hive/test/partitiontime=${date}", group: "HDFS.NS1"},
+
+          // hive hive_ns1.default.nginxformat
+          { id: "HIVE.HIVE1", nick: "HIVE1", isGroup: true, type: "hive"},
+          { id: "HIVE.HIVE1.default", nick: "default", isGroup: true, group: "HIVE.HIVE1", type: "hive"},
+          { id: "HIVE.HIVE1.flume", nick: "flume", isGroup: true, group: "HIVE.HIVE1", type: "hive"},
+          { id: "HIVE.HIVE1.default.nginxformat", nick: "nginxformat", group: "HIVE.HIVE1.default"},
+          { id: "HIVE.HIVE1.default.mobilelog", nick: "mobilelog", group: "HIVE.HIVE1.default"},
+          { id: "HIVE.HIVE1.flume.analysislog", nick: "analysislog", group: "HIVE.HIVE1.flume"},
+        ];
+
+
+        var linkDataArray = [  // link data
+          { from: "Flume.agentZhe800Log_Rtm.sources.src_kafka", to: "Flume.agentZhe800Log_Rtm.channels.ch_mem" },
+          { from: "Flume.agentZhe800Log_Rtm.sources.src_kafka", to: "Flume.agentZhe800Log_Rtm.channels.ch_smem-1" },
+          { from: "Flume.agentZhe800Log_Rtm.sources.src_kafka", to: "Flume.agentZhe800Log_Rtm.channels.ch_smem-2" },
+          { from: "Flume.agentZhe800Log_Rtm.sources.src_kafka", to: "Flume.agentZhe800Log_Rtm.channels.ch_file" },
+          { from: "Flume.agentZhe800Log_Rtm.channels.ch_file", to: "Flume.agentZhe800Log_Rtm.sinks.sink_kafka" },
+          { from: "Flume.agentZhe800Log_Rtm.channels.ch_smem-1", to: "Flume.agentZhe800Log_Rtm.sinks.sink_hdfs" },
+          { from: "Flume.agentZhe800Log_Rtm.channels.ch_smem-2", to: "Flume.agentZhe800Log_Rtm.sinks.sink_hive" },
+          { from: "Flume.agentZhe800Log_Rtm.channels.ch_mem", to: "Flume.agentZhe800Log_Rtm.sinks.sink_monitor" },
+          { from: "Flume.agentZhe800Log_Rtm.sinks.sink_monitor", to: "Kafka.bigpipe.arch_nginx_monitor" },
+
+          { from: "Flume.agentZhe800Log_Ori.sources.src_exec", to: "Flume.agentZhe800Log_Ori.channels.ch_smem" },
+          { from: "Flume.agentZhe800Log_Ori.channels.ch_smem", to: "Flume.agentZhe800Log_Ori.sinks.sink_kafka" },
+
+          { from: "Flume.agentZhe800Log_Monitor.sources.src_kafka", to: "Flume.agentZhe800Log_Monitor.channels.ch_mem" },
+          { from: "Flume.agentZhe800Log_Monitor.channels.ch_mem", to: "Flume.agentZhe800Log_Monitor.sinks.sink_kafka" },
+
+          { from: "Flume.agentZhe800Log_Ori.sinks.sink_kafka", to: "Kafka.bigpipe.nginx_zhe800_log" },
+          { from: "Kafka.bigpipe.nginx_zhe800_log.flume_realtime", to: "Flume.agentZhe800Log_Rtm.sources.src_kafka" },
+          { from: "Kafka.bigpipe.nginx_zhe800_log.monitor", to: "Flume.agentZhe800Log_Monitor.sources.src_kafka"},
+
+          { from: "Flume.agentZhe800Log_Rtm.sinks.sink_kafka", to: "Kafka.bigpipe.real_time_log" },
+          { from: "Flume.agentZhe800Log_Rtm.sinks.sink_hdfs", to: "HDFS.NS1./input/woss/hive/test/partitionmonth=${yearmonth}/partitiontime=${date}" },
+          { from: "Flume.agentZhe800Log_Rtm.sinks.sink_hive", to: "HIVE.HIVE1.default.nginxformat" },
+        ];
+        //myDiagram.model = new go.GraphLinksModel(//nodeKeyProperty="id",
+        //  nodeDataArray, linkDataArray  
+        //);
+        myDiagram.model = new go.GraphLinksModel
+        myDiagram.model.nodeKeyProperty = "id";
+        myDiagram.model.nodeCategoryProperty = "type";
+        myDiagram.model.nodeDataArray = nodeDataArray;
+        myDiagram.model.linkDataArray = linkDataArray;
+     } 
+    </script>
+  </head>
+ 
+  <body onload="init()">
+    <div id="myDiagramDiv" style="width:100%; height:600px; background-color: #DAE4E4;"></div>
+  </body>
+
+</html>

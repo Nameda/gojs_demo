@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>gojsDemo</title>
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/gojs/1.8.36/go.js"></script> -->
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/gojs/1.8.13/go-debug.js"></script> -->
+    <script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gojs/1.8.2/go.js"></script>
+</head>
+<body>
+    <div id="myDiagramDiv" style="width:800px;height: 800px;background: #eee;"></div>
+</body>
+</html>
+<script>
+    window.onload = function(){
+        var $ = go.GraphObject.make;
+
+        //Diagram图表对象：
+        var myDiagram = $(go.Diagram,"myDiagramDiv",{
+            initialContentAlignment:go.Spot.Center,//居中显示
+            "undoManager.isEnabled":true,//启用Ctrl-Z撤销和Ctrl-Y重做功能
+            layout:$(go.TreeLayout,//树形排布
+                {
+                    angle:90, //父子节点竖排，同水平线成90度
+                    layerSpacing:35  //父子节点默认间距35像素
+                }
+            )
+        })
+
+        //节点Node模板：
+        //myDiagram.nodeTemplateMap.add()方法来添加Node模板 唯一名称来区分
+        myDiagram.nodeTemplate = $(go.Node,"Horizontal",//内容水平排列
+            {background:"#44CCFF"},//节点背景颜色
+            $(go.Picture,{margin:10,width:50,height:50,background:"#ada"},new go.Binding("source")),// 节点中的图片地址绑定模型中的"source"属性
+            $(go.TextBlock,"空白",{margin:12,stroke:"white",font:"bold 16px sans-serif"},new go.Binding("text","name")) //节点中显示的文字绑定模型中的"name"属性
+        )
+
+        //连线Link模板：
+        //myDiagram.linkTemplateMap.add()方法来添加Link模板
+        myDiagram.linkTemplate = $(go.Link,
+            {routing:go.Link.Orthogonal,corner:5},//风格：折线直角弯，弧度5像素
+            $(go.Shape,{strokeWidth:3,stroke:"#840"})// 线宽3像素，褐色
+        )
+
+        //模型Model
+        var model = $(go.TreeModel);// 声明模型变量的类型是树形
+        // 树形模型必须有"key"和"parent"的字段名
+        model.nodeDataArray = [
+            { key: "1",              name: "小花", source: "http://b-ssl.duitang.com/uploads/item/201509/17/20150917091946_RHXBh.jpeg" },
+            { key: "2", parent: "1", name: "小黄", source: "http://b-ssl.duitang.com/uploads/item/201509/17/20150917092049_GnEN2.jpeg" },
+            { key: "3", parent: "1", name: "小灰", source: "http://cdn.duitang.com/uploads/item/201507/10/20150710045602_wHEBf.jpeg" },
+            { key: "4", parent: "3", name: "小白", source: "http://cdn.duitang.com/uploads/item/201412/24/20141224010926_crKEt.thumb.700_0.jpeg" },
+            { key: "5", parent: "3", name: "小喵", source: "http://b-ssl.duitang.com/uploads/item/201510/23/20151023231005_MGe2Q.jpeg" },
+            { key: "6", parent: "2", name: "小黑", source: "http://b-ssl.duitang.com/uploads/item/201603/12/20160312221641_veftm.jpeg" },
+            { /* 空节点数据 */  }  // 空节点会使用节点模板中定义的默认值，如本例红色图片，"空白"字样
+        ];
+        myDiagram.model = model; //将模型绑定到图标上
+    }
+</script>

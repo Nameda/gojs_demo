@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gojs/1.8.2/go.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.2/umd/popper.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/js/bootstrap.min.js"></script>
+    <script>
+      function init() {
+        $('#myDiagramDiv').css({
+            float: 'left',
+            width: $(window).width(),
+            height: $(window).height()
+        });
+
+        $('#myOverviewDiv').css({
+            position: 'absolute',
+            height: $(window).width()/8,
+            width: $(window).height()/6
+        });
+
+        $('#menu').css({
+            position: 'absolute',
+            width: 120
+        });
+
+        var GJ = go.GraphObject.make;
+
+        //Diagram图表对象：
+        myDiagram =
+          GJ(go.Diagram, "myDiagramDiv",  // Diagram refers to its DIV HTML element by id
+            {
+              initialContentAlignment: go.Spot.Center, // 居中显示
+              maxSelectionCount: 1, // no more than 1 element can be selected at a time
+              layout: GJ(go.LayeredDigraphLayout, {layeringOption:go.LayeredDigraphLayout.LayerLongestPathSource}),//分层图布局 分配层使用最长路径源分层
+              //initialAutoScale: go.Diagram.UniformToFill,
+            });
+
+        //节点Node模板：
+        // define the node template
+        myDiagram.nodeTemplate =
+        GJ(go.Node, "Auto",
+            //new go.Binding("location", "loc"),
+            {   locationSpot: go.Spot.Center,
+                toEndSegmentLength: 30, fromEndSegmentLength: 30,
+                fromSpot: go.Spot.Right, // links going out from right
+                toSpot: go.Spot.Left, // links coming into from left
+            },
+            GJ(go.Shape, "Rectangle",
+              {
+                name: "OBJSHAPE",
+              },
+              new go.Binding("fill", "isHighlighted", function(h) { return h ? "red" : "white"; }).ofObject(),
+            ),
+            GJ(go.TextBlock,
+              { margin: 4 },
+              new go.Binding("text", "nick")),
+            {
+              toolTip:  //  define a tooltip for each node that displays its information
+                GJ(go.Adornment, "Auto",
+                  GJ(go.Shape, { fill: "#EFEFCC" }),
+                  GJ(go.TextBlock, { margin: 4 },
+                    new go.Binding("text", "id"))
+                )
+            }
+          );
+
+        myDiagram.nodeTemplateMap.add("flumeComponentNode",
+          GJ(go.Node, "Auto",
+            //new go.Binding("location", "loc"),
+            {   locationSpot: go.Spot.Center,
+                toEndSegmentLength: 30, fromEndSegmentLength: 30,
+                fromSpot: go.Spot.Right, // links going out from right
+                toSpot: go.Spot.Left, // links coming into from left
+            },
+            GJ(go.Shape, "Rectangle",
+              {
+                name: "OBJSHAPE",
+              },
+              new go.Binding("fill", "isHighlighted", function(h) { return h ? "red" : "white"; }).ofObject(),
+            ),
+            GJ(go.TextBlock,
+              { margin: 4 },
+              new go.Binding("text", "nick")),
+            {
+              toolTip:  //  define a tooltip for each node that displays its information
+                GJ(go.Adornment, "Auto",
+                  GJ(go.Shape, { fill: "#EFEFCC" }),
+                  GJ(go.TextBlock, { margin: 4 },
+                    new go.Binding("text", "tips"))
+                )
+            }
+          )
+        );
+
+        //连线Link模板：
+        // define the link template
+        myDiagram.linkTemplateMap.add("default",
+          GJ(go.Link,
+            {
+              selectionAdornmentTemplate:
+                GJ(go.Adornment,
+                  GJ(go.Shape,
+                    { isPanelMain: true, stroke: "dodgerblue", strokeWidth: 3 }),
+                  GJ(go.Shape,
+                    { toArrow: "Standard", fill: "dodgerblue", stroke: null, scale: 1 })
+                ),
+              routing: go.Link.Normal,
+              curve: go.Link.Bezier,
+              toShortLength: 2
+            },
+            GJ(go.Shape,  //  the link shape
+              { name: "OBJSHAPE" }),
+            GJ(go.Shape,  //  the arrowhead
+              { name: "ARWSHAPE", toArrow: "Standard" }),
+            {
+              toolTip:  //  define a tooltip for each link that displays its information
+                GJ(go.Adornment, "Auto",
+                  GJ(go.Shape, { fill: "#EFEFCC" }),
+                  GJ(go.TextBlock, { margin: 4 },
+                      new go.Binding("text", "", function(link) {return "From: "+ link.from + "\nTo: " + link.to;}))
+                )
+            }
+          ));
+
+        myDiagram.linkTemplateMap.add("srcToChannel",
+          GJ(go.Link,
+            {
+              selectionAdornmentTemplate:
+                GJ(go.Adornment,
+                  GJ(go.Shape,
+                    { isPanelMain: true, stroke: "dodgerblue", strokeWidth: 3 }),
+                  GJ(go.Shape,
+                    { toArrow: "Standard", fill: "dodgerblue", stroke: null, scale: 1 })
+                ),
+              routing: go.Link.Normal,
+              curve: go.Link.Bezier,
+              toShortLength: 2
+            },
+            GJ(go.Shape,  //  the link shape
+              { name: "OBJSHAPE" }),
+            GJ(go.Shape,  //  the arrowhead
+              { name: "ARWSHAPE", toArrow: "Standard" }),
+            GJ(go.TextBlock,
+              {
+                textAlign: "center",
+                font: "10pt helvetica, arial, sans-serif",
+                stroke: "#555555",
+                margin: 4
+              },
+              new go.Binding("text", "text")),
+            {
+              toolTip:  //  define a tooltip for each link that displays its information
+                GJ(go.Adornment, "Auto",
+                  GJ(go.Shape, { fill: "#EFEFCC" }),
+                  GJ(go.TextBlock, { margin: 4 },
+                    new go.Binding("text",  "tips"))
+                )
+            }
+          ));
+
+        // define the group template
+        myDiagram.groupTemplateMap.add("flumeAgent",
+          GJ(go.Group, "Spot",
+            {
+              selectionAdornmentTemplate: // adornment when a group is selected
+                GJ(go.Adornment, "Auto",
+                  GJ(go.Shape, "Rectangle",
+                    { fill: null, stroke: "dodgerblue", strokeWidth: 3 }),
+                  GJ(go.Placeholder)
+                ),
+              toEndSegmentLength: 30, fromEndSegmentLength: 30,
+			  layout:
+                GJ(go.GridLayout,
+                    { wrappingColumn: 3, alignment: go.GridLayout.Position})
+
+            },
+            GJ(go.Panel, "Auto",
+              GJ(go.Shape, "Rectangle",
+                {
+                  name: "OBJSHAPE",
+                  //parameter1: 14,
+                },
+                new go.Binding("fill", "isHighlighted", function(h) { return h ? "red" : "#dcead3"; }).ofObject(),
+                new go.Binding("desiredSize", "ds")),
+              GJ(go.Placeholder,
+                { padding: 16 })
+            ),
+            GJ(go.TextBlock,
+              {
+                name: "GROUPTEXT",
+                alignment: go.Spot.TopCenter,
+                //alignmentFocus: new go.Spot(0,0,0,0),
+                alignmentFocus: go.Spot.TopCenter,
+                font: "Bold 10pt Sans-Serif"
+              },
+              new go.Binding("text", "nick")),
+            {
+              toolTip:  //  define a tooltip for each group that displays its information
+                GJ(go.Adornment, "Auto",
+                  GJ(go.Shape, { fill: "#EFEFCC" }),
+                  GJ(go.TextBlock, { margin: 4 },
+                    new go.Binding("text",  "id"))
+                )
+            }
+          )
+        );
+        myDiagram.groupTemplateMap.add("flumeComponent",
+          GJ(go.Group, "Spot",
+            {
+              selectionAdornmentTemplate: // adornment when a group is selected
+                GJ(go.Adornment, "Auto",
+                  GJ(go.Shape, "Rectangle",
+                    { fill: null, stroke: "dodgerblue", strokeWidth: 3 }),
+                  GJ(go.Placeholder)
+                ),
+              toEndSegmentLength: 30, fromEndSegmentLength: 30,
+			  layout:
+                GJ(go.GridLayout,
+                    { wrappingColumn: 1, alignment: go.GridLayout.Position,
+                      cellSize: new go.Size(1, 1), spacing: new go.Size(4, 4) })
+
+            },
+            GJ(go.Panel, "Auto",
+              GJ(go.Shape, "Rectangle",
+                {
+                  name: "OBJSHAPE",
+                  //parameter1: 14,
+                },
+                new go.Binding("fill", "isHighlighted", function(h) { return h ? "red" : "#dcead3"; }).ofObject(),
+                new go.Binding("desiredSize", "ds")),
+              GJ(go.Placeholder,
+                { padding: 16 })
+            ),
+            GJ(go.TextBlock,
+              {
+                name: "GROUPTEXT",
+                alignment: go.Spot.TopCenter,
+                //alignmentFocus: new go.Spot(0,0,0,0),
+                alignmentFocus: go.Spot.TopCenter,
+                font: "Bold 10pt Sans-Serif"
+              },
+              new go.Binding("text", "nick")),
+            {
+              toolTip:  //  define a tooltip for each group that displays its information
+                GJ(go.Adornment, "Auto",
+                  GJ(go.Shape, { fill: "#EFEFCC" }),
+                  GJ(go.TextBlock, { margin: 4 },
+                    new go.Binding("text",  "id"))
+                )
+            }
+          )
+        );
+
+        myDiagram.groupTemplateMap.add("kafka",
+          GJ(go.Group, "Spot",
+            {
+              //selectionAdornmentTemplate: // adornment when a group is selected
+              //  GJ(go.Adornment, "Auto",
+              //    GJ(go.Shape, "Rectangle",
+              //      { fill: null, stroke: "dodgerblue", strokeWidth: 3 }),
+              //    //GJ(go.Placeholder)
+              //  ),
+              //toEndSegmentLength: 30, fromEndSegmentLength: 30,
+			  layout:
+                GJ(go.GridLayout,
+                    { wrappingColumn: 1, alignment: go.GridLayout.Position,
+                      cellSize: new go.Size(1, 1), spacing: new go.Size(4, 4) })
+
+            },
+            GJ(go.Panel, "Auto",
+              GJ(go.Shape, "Rectangle",
+                {
+                  name: "OBJSHAPE",
+                  //parameter1: 14,
+                },
+                new go.Binding("fill", "isHighlighted", function(h) { return h ? "red" : "#d4e3f2"; }).ofObject(),
+                new go.Binding("desiredSize", "ds")),
+              GJ(go.Placeholder,
+                { padding: 16 })
+            ),
+            GJ(go.TextBlock,
+              {
+                name: "GROUPTEXT",
+                alignment: go.Spot.TopCenter,
+                //alignmentFocus: new go.Spot(0,0,0,0),
+                alignmentFocus: go.Spot.TopCenter,
+                font: "Bold 10pt Sans-Serif"
+              },
+              new go.Binding("text", "nick")),
+            {
+              fromSpot: go.Spot.Right, // links going out from right
+              toSpot: go.Spot.Left, // links coming into from left
+              toolTip:  //  define a tooltip for each group that displays its information
+                GJ(go.Adornment, "Auto",
+                  GJ(go.Shape, { fill: "#EFEFCC" }),
+                  GJ(go.TextBlock, { margin: 4 },
+                    new go.Binding("text",  "id"))
+                )
+            }
+          )
+        );
+
+        myDiagram.groupTemplateMap.add("hive",
+          GJ(go.Group, "Spot",
+            {
+              //selectionAdornmentTemplate: // adornment when a group is selected
+              //  GJ(go.Adornment, "Auto",
+              //    GJ(go.Shape, "Rectangle",
+              //      { fill: null, stroke: "dodgerblue", strokeWidth: 3 }),
+              //    //GJ(go.Placeholder)
+              //  ),
+              //toEndSegmentLength: 30, fromEndSegmentLength: 30,
+			  layout:
+                GJ(go.GridLayout,
+                    { wrappingColumn: 1, alignment: go.GridLayout.Position,
+                      cellSize: new go.Size(1, 1), spacing: new go.Size(4, 4) })
+
+            },
+            GJ(go.Panel, "Auto",
+              GJ(go.Shape, "Rectangle",
+                {
+                  name: "OBJSHAPE",
+                  //parameter1: 14,
+                },
+                new go.Binding("fill", "isHighlighted", function(h) { return h ? "red" : "#eee5cd"; }).ofObject(),
+                new go.Binding("desiredSize", "ds")),
+              GJ(go.Placeholder,
+                { padding: 16 })
+            ),
+            GJ(go.TextBlock,
+              {
+                name: "GROUPTEXT",
+                alignment: go.Spot.TopCenter,
+                //alignmentFocus: new go.Spot(0,0,0,0),
+                alignmentFocus: go.Spot.TopCenter,
+                font: "Bold 10pt Sans-Serif"
+              },
+              new go.Binding("text", "nick")),
+            {
+              fromSpot: go.Spot.Right, // links going out from right
+              toSpot: go.Spot.Left, // links coming into from left
+              toolTip:  //  define a tooltip for each group that displays its information
+                GJ(go.Adornment, "Auto",
+                  GJ(go.Shape, { fill: "#EFEFCC" }),
+                  GJ(go.TextBlock, { margin: 4 },
+                    new go.Binding("text",  "id"))
+                )
+            }
+          )
+        );
+
+        myDiagram.groupTemplateMap.add("hdfs",
+          GJ(go.Group, "Spot",
+            {
+              //selectionAdornmentTemplate: // adornment when a group is selected
+              //  GJ(go.Adornment, "Auto",
+              //    GJ(go.Shape, "Rectangle",
+              //      { fill: null, stroke: "dodgerblue", strokeWidth: 3 }),
+              //    //GJ(go.Placeholder)
+              //  ),
+              //toEndSegmentLength: 30, fromEndSegmentLength: 30,
+			  layout:
+                GJ(go.GridLayout,
+                    { wrappingColumn: 1, alignment: go.GridLayout.Position,
+                      cellSize: new go.Size(1, 1), spacing: new go.Size(4, 4) })
+
+            },
+            GJ(go.Panel, "Auto",
+              GJ(go.Shape, "Rectangle",
+                {
+                  name: "OBJSHAPE",
+                  //parameter1: 14,
+                },
+                new go.Binding("fill", "isHighlighted", function(h) { return h ? "red" : "#b9b9b9"; }).ofObject(),
+                new go.Binding("desiredSize", "ds")),
+              GJ(go.Placeholder,
+                { padding: 16 })
+            ),
+            GJ(go.TextBlock,
+              {
+                name: "GROUPTEXT",
+                alignment: go.Spot.TopCenter,
+                //alignmentFocus: new go.Spot(0,0,0,0),
+                alignmentFocus: go.Spot.TopCenter,
+                font: "Bold 10pt Sans-Serif"
+              },
+              new go.Binding("text", "nick")),
+            {
+              fromSpot: go.Spot.Right, // links going out from right
+              toSpot: go.Spot.Left, // links coming into from left
+              toolTip:  //  define a tooltip for each group that displays its information
+                GJ(go.Adornment, "Auto",
+                  GJ(go.Shape, { fill: "#EFEFCC" }),
+                  GJ(go.TextBlock, { margin: 4 },
+                    new go.Binding("text",  "id"))
+                )
+            }
+          )
+        );
+
+        myDiagram.groupTemplateMap.add("es",
+          GJ(go.Group, "Spot",
+            {
+              //selectionAdornmentTemplate: // adornment when a group is selected
+              //  GJ(go.Adornment, "Auto",
+              //    GJ(go.Shape, "Rectangle",
+              //      { fill: null, stroke: "dodgerblue", strokeWidth: 3 }),
+              //    //GJ(go.Placeholder)
+              //  ),
+              //toEndSegmentLength: 30, fromEndSegmentLength: 30,
+			  layout:
+                GJ(go.GridLayout,
+                    { wrappingColumn: 1, alignment: go.GridLayout.Position,
+                      cellSize: new go.Size(1, 1), spacing: new go.Size(4, 4) })
+
+            },
+            GJ(go.Panel, "Auto",
+              GJ(go.Shape, "Rectangle",
+                {
+                  name: "OBJSHAPE",
+                  //parameter1: 14,
+                  fill: "#b8f9b7"
+                },
+                new go.Binding("fill", "isHighlighted", function(h) { return h ? "red" : "#b8f9b7"; }).ofObject(),
+                new go.Binding("desiredSize", "ds")),
+              GJ(go.Placeholder,
+                { padding: 16 })
+            ),
+            GJ(go.TextBlock,
+              {
+                name: "GROUPTEXT",
+                alignment: go.Spot.TopCenter,
+                //alignmentFocus: new go.Spot(0,0,0,0),
+                alignmentFocus: go.Spot.TopCenter,
+                font: "Bold 10pt Sans-Serif"
+              },
+              new go.Binding("text", "nick")),
+            {
+              fromSpot: go.Spot.Right, // links going out from right
+              toSpot: go.Spot.Left, // links coming into from left
+              toolTip:  //  define a tooltip for each group that displays its information
+                GJ(go.Adornment, "Auto",
+                  GJ(go.Shape, { fill: "#EFEFCC" }),
+                  GJ(go.TextBlock, { margin: 4 },
+                    new go.Binding("text",  "id"))
+                )
+            }
+          )
+        );
+
+        var nodeDataArray = [ // node data
+          // agentZhe800Log_Rtm
+          { id: "Flume.agentZhe800Log_Rtm", nick: "agentZhe800Log_Rtm", isGroup: true, type: "flumeAgent" },
+          { id: "Flume.agentZhe800Log_Rtm.sources", nick: "sources", isGroup: true, group: "Flume.agentZhe800Log_Rtm",  type: "flumeComponent"},
+          { id: "Flume.agentZhe800Log_Rtm.channels", nick: "channels", isGroup: true, group: "Flume.agentZhe800Log_Rtm", type: "flumeComponent" },
+          { id: "Flume.agentZhe800Log_Rtm.sinks", nick: "sinks", isGroup: true, group: "Flume.agentZhe800Log_Rtm", type: "flumeComponent" },
+          { id: "Flume.agentZhe800Log_Rtm.sources.src_kafka", nick: "src_kafka", group: "Flume.agentZhe800Log_Rtm.sources"},
+          { id: "Flume.agentZhe800Log_Rtm.channels.ch_mem", nick: "ch_mem", group: "Flume.agentZhe800Log_Rtm.channels"},
+          { id: "Flume.agentZhe800Log_Rtm.channels.ch_smem-1", nick: "ch_smem", group: "Flume.agentZhe800Log_Rtm.channels"},
+          { id: "Flume.agentZhe800Log_Rtm.channels.ch_smem-2", nick: "ch_smem", group: "Flume.agentZhe800Log_Rtm.channels"},
+          { id: "Flume.agentZhe800Log_Rtm.channels.ch_file", nick: "ch_file", group: "Flume.agentZhe800Log_Rtm.channels"},
+          { id: "Flume.agentZhe800Log_Rtm.sinks.sink_hdfs", nick: "sink_hdfs", group: "Flume.agentZhe800Log_Rtm.sinks"},
+          { id: "Flume.agentZhe800Log_Rtm.sinks.sink_hive", nick: "sink_hive", group: "Flume.agentZhe800Log_Rtm.sinks"},
+          { id: "Flume.agentZhe800Log_Rtm.sinks.sink_kafka", nick: "sink_kafka", group: "Flume.agentZhe800Log_Rtm.sinks"},
+          { id: "Flume.agentZhe800Log_Rtm.sinks.sink_monitor", nick: "sink_monitor", group: "Flume.agentZhe800Log_Rtm.sinks"},
+
+          // agentZhe800Log_Ori
+          { id: "Flume.agentZhe800Log_Ori", nick: "agentZhe800Log_Ori", isGroup: true, type: "flumeAgent" },
+          { id: "Flume.agentZhe800Log_Ori.sources", nick: "sources", isGroup: true, group: "Flume.agentZhe800Log_Ori",  type: "flumeComponent"},
+          { id: "Flume.agentZhe800Log_Ori.channels", nick: "channels", isGroup: true, group: "Flume.agentZhe800Log_Ori", type: "flumeComponent" },
+          { id: "Flume.agentZhe800Log_Ori.sinks", nick: "sinks", isGroup: true, group: "Flume.agentZhe800Log_Ori", type: "flumeComponent" },
+          { id: "Flume.agentZhe800Log_Ori.sources.src_exec", nick: "src_exec", group: "Flume.agentZhe800Log_Ori.sources"},
+          { id: "Flume.agentZhe800Log_Ori.channels.ch_smem", nick: "ch_smem", group: "Flume.agentZhe800Log_Ori.channels"},
+          { id: "Flume.agentZhe800Log_Ori.sinks.sink_kafka", nick: "sink_kafka", group: "Flume.agentZhe800Log_Ori.sinks"},
+
+          // agentZhe800Log_Monitor
+          { id: "Flume.agentZhe800Log_Monitor", nick: "agentZhe800Log_Monitor", isGroup: true, type: "flumeAgent" },
+          { id: "Flume.agentZhe800Log_Monitor.sources", nick: "sources", isGroup: true, group: "Flume.agentZhe800Log_Monitor",  type: "flumeComponent"},
+          { id: "Flume.agentZhe800Log_Monitor.channels", nick: "channels", isGroup: true, group: "Flume.agentZhe800Log_Monitor", type: "flumeComponent" },
+          { id: "Flume.agentZhe800Log_Monitor.sinks", nick: "sinks", isGroup: true, group: "Flume.agentZhe800Log_Monitor", type: "flumeComponent" },
+          { id: "Flume.agentZhe800Log_Monitor.sources.src_kafka", nick: "src_kafka", group: "Flume.agentZhe800Log_Monitor.sources"},
+          { id: "Flume.agentZhe800Log_Monitor.channels.ch_mem", nick: "ch_mem", group: "Flume.agentZhe800Log_Monitor.channels"},
+          { id: "Flume.agentZhe800Log_Monitor.sinks.sink_kafka", nick: "sink_kafka", group: "Flume.agentZhe800Log_Monitor.sinks"},
+
+          // kafka nginx_zhe800_log
+          { id: "Kafka.bigpipe", nick: "bigpipe", isGroup: true, type: "kafka" },
+          { id: "Kafka.bigpipe.nginx_zhe800_log", nick: "nginx_zhe800_log", isGroup: true, group: "Kafka.bigpipe", type: "kafka" },
+          { id: "Kafka.bigpipe.nginx_zhe800_log.flume_realtime", nick: "flume_realtime", group: "Kafka.bigpipe.nginx_zhe800_log"},
+          { id: "Kafka.bigpipe.nginx_zhe800_log.monitor", nick: "monitor", group: "Kafka.bigpipe.nginx_zhe800_log"},
+          { id: "Kafka.bigpipe.real_time_log", nick: "real_time_log", isGroup: true, group: "Kafka.bigpipe",  type: "kafka" },
+
+          // kafka arch_nginx_monitor
+          { id: "Kafka.bigpipe.arch_nginx_monitor", nick: "arch_nginx_monitor", isGroup: true, group: "Kafka.bigpipe",  type: "kafka" },
+
+          // hdfs /input/woss/hive/test/partitionmonth=${xx}/partitiontime=${xx}
+          { id: "HDFS.NS1", nick: "NS1", isGroup: true, type: "hdfs"},
+          { id: "HDFS.NS1./input/woss/hive/test/partitionmonth=${yearmonth}/partitiontime=${date}", nick: "/input/woss/hive/test/partitionmonth=${yearmonth}/partitiontime=${date}", group: "HDFS.NS1"},
+          { id: "HDFS.NS1./input/woss/hive/test1/partitiontime=${date}", nick: "/input/woss/hive/test/partitiontime=${date}", group: "HDFS.NS1"},
+
+          // hive hive_ns1.default.nginxformat
+          { id: "HIVE.HIVE1", nick: "HIVE1", isGroup: true, type: "hive"},
+          { id: "HIVE.HIVE1.default", nick: "default", isGroup: true, group: "HIVE.HIVE1", type: "hive"},
+          { id: "HIVE.HIVE1.flume", nick: "flume", isGroup: true, group: "HIVE.HIVE1", type: "hive"},
+          { id: "HIVE.HIVE1.default.nginxformat", nick: "nginxformat", group: "HIVE.HIVE1.default"},
+          { id: "HIVE.HIVE1.default.mobilelog", nick: "mobilelog", group: "HIVE.HIVE1.default"},
+          { id: "HIVE.HIVE1.flume.analysislog", nick: "analysislog", group: "HIVE.HIVE1.flume"},
+        ];
+
+
+        var linkDataArray = [  // link data
+          { from: "Flume.agentZhe800Log_Rtm.sources.src_kafka", to: "Flume.agentZhe800Log_Rtm.channels.ch_mem" },
+          { from: "Flume.agentZhe800Log_Rtm.sources.src_kafka", to: "Flume.agentZhe800Log_Rtm.channels.ch_smem-1" },
+          { from: "Flume.agentZhe800Log_Rtm.sources.src_kafka", to: "Flume.agentZhe800Log_Rtm.channels.ch_smem-2" },
+          { from: "Flume.agentZhe800Log_Rtm.sources.src_kafka", to: "Flume.agentZhe800Log_Rtm.channels.ch_file" },
+          { from: "Flume.agentZhe800Log_Rtm.channels.ch_file", to: "Flume.agentZhe800Log_Rtm.sinks.sink_kafka" },
+          { from: "Flume.agentZhe800Log_Rtm.channels.ch_smem-1", to: "Flume.agentZhe800Log_Rtm.sinks.sink_hdfs" },
+          { from: "Flume.agentZhe800Log_Rtm.channels.ch_smem-2", to: "Flume.agentZhe800Log_Rtm.sinks.sink_hive" },
+          { from: "Flume.agentZhe800Log_Rtm.channels.ch_mem", to: "Flume.agentZhe800Log_Rtm.sinks.sink_monitor" },
+          { from: "Flume.agentZhe800Log_Rtm.sinks.sink_monitor", to: "Kafka.bigpipe.arch_nginx_monitor" },
+
+          { from: "Flume.agentZhe800Log_Ori.sources.src_exec", to: "Flume.agentZhe800Log_Ori.channels.ch_smem" },
+          { from: "Flume.agentZhe800Log_Ori.channels.ch_smem", to: "Flume.agentZhe800Log_Ori.sinks.sink_kafka" },
+
+          { from: "Flume.agentZhe800Log_Monitor.sources.src_kafka", to: "Flume.agentZhe800Log_Monitor.channels.ch_mem" },
+          { from: "Flume.agentZhe800Log_Monitor.channels.ch_mem", to: "Flume.agentZhe800Log_Monitor.sinks.sink_kafka" },
+
+          { from: "Flume.agentZhe800Log_Ori.sinks.sink_kafka", to: "Kafka.bigpipe.nginx_zhe800_log" },
+          { from: "Kafka.bigpipe.nginx_zhe800_log.flume_realtime", to: "Flume.agentZhe800Log_Rtm.sources.src_kafka" },
+          { from: "Kafka.bigpipe.nginx_zhe800_log.monitor", to: "Flume.agentZhe800Log_Monitor.sources.src_kafka"},
+
+          { from: "Flume.agentZhe800Log_Rtm.sinks.sink_kafka", to: "Kafka.bigpipe.real_time_log" },
+          { from: "Flume.agentZhe800Log_Rtm.sinks.sink_hdfs", to: "HDFS.NS1./input/woss/hive/test/partitionmonth=${yearmonth}/partitiontime=${date}" },
+          { from: "Flume.agentZhe800Log_Rtm.sinks.sink_hive", to: "HIVE.HIVE1.default.nginxformat" },
+        ];
+        //myDiagram.model = new go.GraphLinksModel(//nodeKeyProperty="id",
+        //  nodeDataArray, linkDataArray  
+        //);  
+
+        
+        myDiagram.model = new go.GraphLinksModel
+        myDiagram.model.nodeKeyProperty = "id";
+        myDiagram.model.nodeCategoryProperty = "type";
+        myDiagram.model.nodeDataArray = nodeDataArray;
+        myDiagram.model.linkCategoryProperty = "type";
+        myDiagram.model.linkDataArray = linkDataArray;
+        myDiagram.toolManager.hoverDelay= 100;
+        myDiagram.toolManager.toolTipDuration= 60000;
+        myDiagram.addDiagramListener("ChangedSelection", updateHighlights);
+        myDiagram.addDiagramListener("ObjectDoubleClicked", popModal);
+
+        // Overview
+        myOverview =
+          GJ(go.Overview, "myOverviewDiv",  // the HTML DIV element for the Overview
+            { observed: myDiagram, contentAlignment: go.Spot.Center });   // tell it which Diagram to show and pan
+
+      }
+
+
+
+
+      function updateHighlights() {
+        // 重置所有高亮标记状态
+        myDiagram.nodes.each(function(node) { node.highlight = 0; });
+        myDiagram.links.each(function(link) { link.highlight = 0; });
+
+        var sel = myDiagram.selection.first();
+        if (sel !== null) {
+          markAllReachable(sel, 1);
+        }
+
+        // 按照标记进行高亮
+        // nodes
+        myDiagram.nodes.each(function(node) {
+          var shp = node.findObject("OBJSHAPE");
+          var grp = node.findObject("GROUPTEXT");
+          var hl = node.highlight;
+          highlight(shp, grp, hl);
+        });
+        // links
+        myDiagram.links.each(function(link) {
+          var hl = link.highlight;
+          var shp = link.findObject("OBJSHAPE");
+          var arw = link.findObject("ARWSHAPE");
+          highlight(shp, arw, hl);
+        });
+      }
+
+
+      // 标记所有上下游
+      function markAllReachable(x, i) {
+        markAllParents(x, i);
+        markAllChildren(x, i);
+      }
+
+      // 递归标记上游,如果node没有上游link但是其group有上游link，则用group继续向上递归
+      function markAllParents(x, i) {
+        if (x instanceof go.Link) {
+          x.highlight = i;
+          markAllParents(x.fromNode, i);
+        } else {
+          x.highlight = i;
+          if (isEmptyIterator(x.findLinksInto())) {
+            var container = x.containingGroup;
+            if (container !== null) {
+              // group有link连入说明其为数据流节点
+              if (! isEmptyIterator(container.findLinksInto())) {markAllParents(container, i);}
+            }
+          } else {
+            x.findLinksInto().each(function(node) {
+              markAllParents(node, i);
+            });
+          }
+        }
+      }
+
+      // 递归标记下游,如果node没有下游link但是其子节点有，则用子节点继续向下递归
+      function markAllChildren(x, i) {
+        if (x instanceof go.Link) {
+          x.highlight = i;
+          markAllChildren(x.toNode, i);
+        } else {
+          x.highlight = i;
+          if (isEmptyIterator(x.findLinksOutOf())) {
+            if (x instanceof go.Group) {
+              myDiagram.nodes.each(function(node) {
+                if (node.containingGroup === x) {
+                  // 子节点有link连出说明其为数据流节点
+                  if (! isEmptyIterator(node.findLinksOutOf())) {
+                    markAllChildren(node, i);
+                  }
+                }
+              });
+            }
+          } else {
+            x.findLinksOutOf().each(function(node) {
+              markAllChildren(node, i);
+            });
+          }
+        }
+      }
+
+
+      function highlight(shp, obj2, hl) {
+        var color;
+        if (hl === 0) { color = "black"; width = 1; }
+        else if (hl === 1) { color = "red"; }
+        else if (hl === 2) { color = "green"; }
+        else if (hl === 3) { color = "orange"; }
+        else if (hl === 4) { color = "blue"; }
+        else { color = "purple"; }
+        shp.stroke = color;
+        if (obj2 !== null) {
+          obj2.stroke = color;
+          obj2.fill = color;
+        }
+      }
+
+
+      // 传入的iterator会被改变
+      function isEmptyIterator(obj) {
+          if (obj.hasNext()) {
+            return false;
+          } else {
+            return true;
+          }
+      }
+
+      // 返回一个节点的所有父节点
+      function findAllParents(x) {
+        var list = [];
+		var container = x.containingGroup;
+		if (container !== null) {
+		  list.push(container);
+          var p = findAllParents(container);
+          for (var i in p) {list.push(p[i]);}
+          return list;
+        } else {
+          return list;
+        }
+      }
+
+
+      // 将上面高亮显示的数据流在modal中单独展示
+      function popModal() {
+        $('#diagramModal').modal('toggle');
+
+        $('#myModalDiagramDiv').css({
+            position: 'absolute',
+            width: $(window).width()*0.7,
+            height: $(window).height()*0.7
+        });
+
+        $('#modalDialog').css({
+            'margin-left': $(window).width()*0.15
+        });
+
+        //var modalDialog = $(this).find(".modal-dialog");
+        //// modal宽带为0.7，将modal放在屏幕中间
+        //modalDialog.css("margin-left", $(window).width()*0.15);
+
+        if(typeof myModalDiagram !== 'undefined') {myModalDiagram.div = null;}
+        createModalDiagram();
+        var nodeIds = [];
+        // nodes
+        myDiagram.nodes.each(function(node) {
+          if (node.highlight !== 0) {
+            var nodeList = [];
+            nodeList.push(node);
+            var p = findAllParents(node);
+            for (var i in p) {nodeList.push(p[i]);}
+            for (var i in nodeList) {
+              if (! nodeIds.includes(nodeList[i].data.id)) {
+                nodeIds.push[nodeList[i].data.id];
+                myModalDiagram.model.addNodeData(nodeList[i].data);
+              }
+            }
+          }
+        });
+        // links
+        myDiagram.links.each(function(link) {
+          if (link.highlight !== 0) {
+            myModalDiagram.model.addLinkData(link.data);
+          }
+        });
+        myModalDiagram.requestUpdate();
+      }
+
+
+
+
+
+
+
+
+      function createModalDiagram() {
+
+        var GJ = go.GraphObject.make;
+
+        myModalDiagram =
+          GJ(go.Diagram, "myModalDiagramDiv",  // Diagram refers to its DIV HTML element by id
+            {
+              initialContentAlignment: go.Spot.Center,
+              maxSelectionCount: 1, // no more than 1 element can be selected at a time
+              layout: GJ(go.LayeredDigraphLayout, {layeringOption:go.LayeredDigraphLayout.LayerLongestPathSource}),
+              //initialAutoScale: go.Diagram.UniformToFill,
+            });
+        // define the node template
+        myModalDiagram.nodeTemplate =
+          GJ(go.Node, "Auto",
+            //new go.Binding("location", "loc"),
+            {   locationSpot: go.Spot.Center,
+                toEndSegmentLength: 30, fromEndSegmentLength: 30,
+                fromSpot: go.Spot.Right, // links going out from right
+                toSpot: go.Spot.Left, // links coming into from left
+            },
+            GJ(go.Shape, "Rectangle",
+              {
+                name: "OBJSHAPE",
+                fill: "white"
+              }),
+            GJ(go.TextBlock,
+              { margin: 4 },
+              new go.Binding("text", "nick")),
+            {
+              toolTip:  //  define a tooltip for each node that displays its information
+                GJ(go.Adornment, "Auto",
+                  GJ(go.Shape, { fill: "#EFEFCC" }),
+                  GJ(go.TextBlock, { margin: 4 },
+                    new go.Binding("text", "id"))
+                )
+            }
+          );
+
+        myModalDiagram.nodeTemplateMap.add("flumeComponentNode",
+          GJ(go.Node, "Auto",
+            //new go.Binding("location", "loc"),
+            {   locationSpot: go.Spot.Center,
+                toEndSegmentLength: 30, fromEndSegmentLength: 30,
+                fromSpot: go.Spot.Right, // links going out from right
+                toSpot: go.Spot.Left, // links coming into from left
+            },
+            GJ(go.Shape, "Rectangle",
+              {
+                name: "OBJSHAPE",
+                fill: "white"
+              }),
+            GJ(go.TextBlock,
+              { margin: 4 },
+              new go.Binding("text", "nick")),
+            {
+              toolTip:  //  define a tooltip for each node that displays its information
+                GJ(go.Adornment, "Auto",
+                  GJ(go.Shape, { fill: "#EFEFCC" }),
+                  GJ(go.TextBlock, { margin: 4 },
+                    new go.Binding("text", "tips"))
+                )
+            }
+          )
+        );
+
+
+        // define the link template
+        myModalDiagram.linkTemplateMap.add("default",
+          GJ(go.Link,
+            {
+              selectionAdornmentTemplate:
+                GJ(go.Adornment,
+                  GJ(go.Shape,
+                    { isPanelMain: true, stroke: "dodgerblue", strokeWidth: 3 }),
+                  GJ(go.Shape,
+                    { toArrow: "Standard", fill: "dodgerblue", stroke: null, scale: 1 })
+                ),
+              routing: go.Link.Normal,
+              curve: go.Link.Bezier,
+              toShortLength: 2
+            },
+            GJ(go.Shape,  //  the link shape
+              { name: "OBJSHAPE" }),
+            GJ(go.Shape,  //  the arrowhead
+              { name: "ARWSHAPE", toArrow: "Standard" }),
+            {
+              toolTip:  //  define a tooltip for each link that displays its information
+                GJ(go.Adornment, "Auto",
+                  GJ(go.Shape, { fill: "#EFEFCC" }),
+                  GJ(go.TextBlock, { margin: 4 },
+                      new go.Binding("text", "", function(link) {return "From: "+ link.from + "\nTo: " + link.to;}))
+                )
+            }
+          ));
+
+        myModalDiagram.linkTemplateMap.add("srcToChannel",
+          GJ(go.Link,
+            {
+              selectionAdornmentTemplate:
+                GJ(go.Adornment,
+                  GJ(go.Shape,
+                    { isPanelMain: true, stroke: "dodgerblue", strokeWidth: 3 }),
+                  GJ(go.Shape,
+                    { toArrow: "Standard", fill: "dodgerblue", stroke: null, scale: 1 })
+                ),
+              routing: go.Link.Normal,
+              curve: go.Link.Bezier,
+              toShortLength: 2
+            },
+            GJ(go.Shape,  //  the link shape
+              { name: "OBJSHAPE" }),
+            GJ(go.Shape,  //  the arrowhead
+              { name: "ARWSHAPE", toArrow: "Standard" }),
+            GJ(go.TextBlock,
+              {
+                textAlign: "center",
+                font: "10pt helvetica, arial, sans-serif",
+                stroke: "#555555",
+                margin: 4
+              },
+              new go.Binding("text", "text")),
+            {
+              toolTip:  //  define a tooltip for each link that displays its information
+                GJ(go.Adornment, "Auto",
+                  GJ(go.Shape, { fill: "#EFEFCC" }),
+                  GJ(go.TextBlock, { margin: 4 },
+                    new go.Binding("text",  "tips"))
+                )
+            }
+          ));
+
+        // define the group template
+        myModalDiagram.groupTemplateMap.add("flumeAgent",
+          GJ(go.Group, "Spot",
+            {
+              selectionAdornmentTemplate: // adornment when a group is selected
+                GJ(go.Adornment, "Auto",
+                  GJ(go.Shape, "Rectangle",
+                    { fill: null, stroke: "dodgerblue", strokeWidth: 3 }),
+                  GJ(go.Placeholder)
+                ),
+              toEndSegmentLength: 30, fromEndSegmentLength: 30,
+			  layout:
+                GJ(go.GridLayout,
+                    { wrappingColumn: 3, alignment: go.GridLayout.Position})
+
+            },
+            GJ(go.Panel, "Auto",
+              GJ(go.Shape, "Rectangle",
+                {
+                  name: "OBJSHAPE",
+                  //parameter1: 14,
+                  fill: "#dcead3"
+                },
+                new go.Binding("desiredSize", "ds")),
+              GJ(go.Placeholder,
+                { padding: 16 })
+            ),
+            GJ(go.TextBlock,
+              {
+                name: "GROUPTEXT",
+                alignment: go.Spot.TopCenter,
+                //alignmentFocus: new go.Spot(0,0,0,0),
+                alignmentFocus: go.Spot.TopCenter,
+                font: "Bold 10pt Sans-Serif"
+              },
+              new go.Binding("text", "nick")),
+            {
+              toolTip:  //  define a tooltip for each group that displays its information
+                GJ(go.Adornment, "Auto",
+                  GJ(go.Shape, { fill: "#EFEFCC" }),
+                  GJ(go.TextBlock, { margin: 4 },
+                    new go.Binding("text",  "id"))
+                )
+            }
+          )
+        );
+        myModalDiagram.groupTemplateMap.add("flumeComponent",
+          GJ(go.Group, "Spot",
+            {
+              selectionAdornmentTemplate: // adornment when a group is selected
+                GJ(go.Adornment, "Auto",
+                  GJ(go.Shape, "Rectangle",
+                    { fill: null, stroke: "dodgerblue", strokeWidth: 3 }),
+                  GJ(go.Placeholder)
+                ),
+              toEndSegmentLength: 30, fromEndSegmentLength: 30,
+			  layout:
+                GJ(go.GridLayout,
+                    { wrappingColumn: 1, alignment: go.GridLayout.Position,
+                      cellSize: new go.Size(1, 1), spacing: new go.Size(4, 4) })
+
+            },
+            GJ(go.Panel, "Auto",
+              GJ(go.Shape, "Rectangle",
+                {
+                  name: "OBJSHAPE",
+                  //parameter1: 14,
+                  fill: "#dcead3"
+                },
+                new go.Binding("desiredSize", "ds")),
+              GJ(go.Placeholder,
+                { padding: 16 })
+            ),
+            GJ(go.TextBlock,
+              {
+                name: "GROUPTEXT",
+                alignment: go.Spot.TopCenter,
+                //alignmentFocus: new go.Spot(0,0,0,0),
+                alignmentFocus: go.Spot.TopCenter,
+                font: "Bold 10pt Sans-Serif"
+              },
+              new go.Binding("text", "nick")),
+            {
+              toolTip:  //  define a tooltip for each group that displays its information
+                GJ(go.Adornment, "Auto",
+                  GJ(go.Shape, { fill: "#EFEFCC" }),
+                  GJ(go.TextBlock, { margin: 4 },
+                    new go.Binding("text",  "id"))
+                )
+            }
+          )
+        );
+
+        myModalDiagram.groupTemplateMap.add("kafka",
+          GJ(go.Group, "Spot",
+            {
+              //selectionAdornmentTemplate: // adornment when a group is selected
+              //  GJ(go.Adornment, "Auto",
+              //    GJ(go.Shape, "Rectangle",
+              //      { fill: null, stroke: "dodgerblue", strokeWidth: 3 }),
+              //    //GJ(go.Placeholder)
+              //  ),
+              //toEndSegmentLength: 30, fromEndSegmentLength: 30,
+			  layout:
+                GJ(go.GridLayout,
+                    { wrappingColumn: 1, alignment: go.GridLayout.Position,
+                      cellSize: new go.Size(1, 1), spacing: new go.Size(4, 4) })
+
+            },
+            GJ(go.Panel, "Auto",
+              GJ(go.Shape, "Rectangle",
+                {
+                  name: "OBJSHAPE",
+                  //parameter1: 14,
+                  fill: "#d4e3f2"
+                },
+                new go.Binding("desiredSize", "ds")),
+              GJ(go.Placeholder,
+                { padding: 16 })
+            ),
+            GJ(go.TextBlock,
+              {
+                name: "GROUPTEXT",
+                alignment: go.Spot.TopCenter,
+                //alignmentFocus: new go.Spot(0,0,0,0),
+                alignmentFocus: go.Spot.TopCenter,
+                font: "Bold 10pt Sans-Serif"
+              },
+              new go.Binding("text", "nick")),
+            {
+              fromSpot: go.Spot.Right, // links going out from right
+              toSpot: go.Spot.Left, // links coming into from left
+              toolTip:  //  define a tooltip for each group that displays its information
+                GJ(go.Adornment, "Auto",
+                  GJ(go.Shape, { fill: "#EFEFCC" }),
+                  GJ(go.TextBlock, { margin: 4 },
+                    new go.Binding("text",  "id"))
+                )
+            }
+          )
+        );
+
+        myModalDiagram.groupTemplateMap.add("hive",
+          GJ(go.Group, "Spot",
+            {
+              //selectionAdornmentTemplate: // adornment when a group is selected
+              //  GJ(go.Adornment, "Auto",
+              //    GJ(go.Shape, "Rectangle",
+              //      { fill: null, stroke: "dodgerblue", strokeWidth: 3 }),
+              //    //GJ(go.Placeholder)
+              //  ),
+              //toEndSegmentLength: 30, fromEndSegmentLength: 30,
+			  layout:
+                GJ(go.GridLayout,
+                    { wrappingColumn: 1, alignment: go.GridLayout.Position,
+                      cellSize: new go.Size(1, 1), spacing: new go.Size(4, 4) })
+
+            },
+            GJ(go.Panel, "Auto",
+              GJ(go.Shape, "Rectangle",
+                {
+                  name: "OBJSHAPE",
+                  //parameter1: 14,
+                  fill: "#eee5cd"
+                },
+                new go.Binding("desiredSize", "ds")),
+              GJ(go.Placeholder,
+                { padding: 16 })
+            ),
+            GJ(go.TextBlock,
+              {
+                name: "GROUPTEXT",
+                alignment: go.Spot.TopCenter,
+                //alignmentFocus: new go.Spot(0,0,0,0),
+                alignmentFocus: go.Spot.TopCenter,
+                font: "Bold 10pt Sans-Serif"
+              },
+              new go.Binding("text", "nick")),
+            {
+              fromSpot: go.Spot.Right, // links going out from right
+              toSpot: go.Spot.Left, // links coming into from left
+              toolTip:  //  define a tooltip for each group that displays its information
+                GJ(go.Adornment, "Auto",
+                  GJ(go.Shape, { fill: "#EFEFCC" }),
+                  GJ(go.TextBlock, { margin: 4 },
+                    new go.Binding("text",  "id"))
+                )
+            }
+          )
+        );
+
+        myModalDiagram.groupTemplateMap.add("hdfs",
+          GJ(go.Group, "Spot",
+            {
+              //selectionAdornmentTemplate: // adornment when a group is selected
+              //  GJ(go.Adornment, "Auto",
+              //    GJ(go.Shape, "Rectangle",
+              //      { fill: null, stroke: "dodgerblue", strokeWidth: 3 }),
+              //    //GJ(go.Placeholder)
+              //  ),
+              //toEndSegmentLength: 30, fromEndSegmentLength: 30,
+			  layout:
+                GJ(go.GridLayout,
+                    { wrappingColumn: 1, alignment: go.GridLayout.Position,
+                      cellSize: new go.Size(1, 1), spacing: new go.Size(4, 4) })
+
+            },
+            GJ(go.Panel, "Auto",
+              GJ(go.Shape, "Rectangle",
+                {
+                  name: "OBJSHAPE",
+                  //parameter1: 14,
+                  fill: "#b9b9b9"
+                },
+                new go.Binding("desiredSize", "ds")),
+              GJ(go.Placeholder,
+                { padding: 16 })
+            ),
+            GJ(go.TextBlock,
+              {
+                name: "GROUPTEXT",
+                alignment: go.Spot.TopCenter,
+                //alignmentFocus: new go.Spot(0,0,0,0),
+                alignmentFocus: go.Spot.TopCenter,
+                font: "Bold 10pt Sans-Serif"
+              },
+              new go.Binding("text", "nick")),
+            {
+              fromSpot: go.Spot.Right, // links going out from right
+              toSpot: go.Spot.Left, // links coming into from left
+              toolTip:  //  define a tooltip for each group that displays its information
+                GJ(go.Adornment, "Auto",
+                  GJ(go.Shape, { fill: "#EFEFCC" }),
+                  GJ(go.TextBlock, { margin: 4 },
+                    new go.Binding("text",  "id"))
+                )
+            }
+          )
+        );
+
+        myModalDiagram.groupTemplateMap.add("es",
+          GJ(go.Group, "Spot",
+            {
+              //selectionAdornmentTemplate: // adornment when a group is selected
+              //  GJ(go.Adornment, "Auto",
+              //    GJ(go.Shape, "Rectangle",
+              //      { fill: null, stroke: "dodgerblue", strokeWidth: 3 }),
+              //    //GJ(go.Placeholder)
+              //  ),
+              //toEndSegmentLength: 30, fromEndSegmentLength: 30,
+			  layout:
+                GJ(go.GridLayout,
+                    { wrappingColumn: 1, alignment: go.GridLayout.Position,
+                      cellSize: new go.Size(1, 1), spacing: new go.Size(4, 4) })
+
+            },
+            GJ(go.Panel, "Auto",
+              GJ(go.Shape, "Rectangle",
+                {
+                  name: "OBJSHAPE",
+                  //parameter1: 14,
+                  fill: "#b8f9b7"
+                },
+                new go.Binding("desiredSize", "ds")),
+              GJ(go.Placeholder,
+                { padding: 16 })
+            ),
+            GJ(go.TextBlock,
+              {
+                name: "GROUPTEXT",
+                alignment: go.Spot.TopCenter,
+                //alignmentFocus: new go.Spot(0,0,0,0),
+                alignmentFocus: go.Spot.TopCenter,
+                font: "Bold 10pt Sans-Serif"
+              },
+              new go.Binding("text", "nick")),
+            {
+              fromSpot: go.Spot.Right, // links going out from right
+              toSpot: go.Spot.Left, // links coming into from left
+              toolTip:  //  define a tooltip for each group that displays its information
+                GJ(go.Adornment, "Auto",
+                  GJ(go.Shape, { fill: "#EFEFCC" }),
+                  GJ(go.TextBlock, { margin: 4 },
+                    new go.Binding("text",  "id"))
+                )
+            }
+          )
+        );
+
+        myModalDiagram.model = new go.GraphLinksModel
+        myModalDiagram.model.nodeKeyProperty = "id";
+        myModalDiagram.model.nodeCategoryProperty = "type";
+        myModalDiagram.model.linkCategoryProperty = "type";
+        myModalDiagram.toolManager.hoverDelay= 100;
+        myModalDiagram.toolManager.toolTipDuration= 60000;
+
+        return myModalDiagram;
+
+      }
+
+
+
+      function searchDiagram() {  // called by button
+        var input = document.getElementById("mySearch");
+        if (!input) return;
+        input.focus();
+        myDiagram.startTransaction("highlight search");
+        if (input.value) {
+          // search four different data properties for the string, any of which may match for success
+          // create a case insensitive RegExp from what the user typed
+          var regex = new RegExp(input.value, "i");
+          var results = myDiagram.findNodesByExample({ nick: regex },
+                                                     { tips: regex });
+          myDiagram.highlightCollection(results);
+          document.getElementById("searchResultCount").innerHTML = results.count
+          // try to center the diagram at the first node that was found
+          if (results.count > 0) myDiagram.centerRect(results.first().actualBounds);
+        } else {  // empty string only clears highlighteds collection
+          myDiagram.clearHighlighteds();
+          document.getElementById("searchResultCount").innerHTML = 0
+        }
+        myDiagram.commitTransaction("highlight search");
+      }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </script>
+  </head>
+
+  <body onload="init()">
+    <div id="myOverviewDiv" style="top:10px; left:10px; z-index:300; background-color: aliceblue; border:solid 1px blue;"></div>
+    <div id="myDiagramDiv" style="background-color: #DAE4E4;"></div>
+    <div id="menu" style="top: 10px; right:20px; z-index:300">
+      <div class="col">
+        <div class="row btn-group-vertical">
+          <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#summaryModal">概要信息</button>
+          <a target="_blank" href="{% url 'channel_metrics' %}" class="btn btn-sm btn-primary">Channel数据</a>
+          <a target="_blank" href="{% url 'help' %}" class="btn btn-sm btn-info">帮助</a>
+          <a target="_blank" href="{% url 'error_logs' %}" class="btn btn-sm btn-warning">错误日志</a>
+          <input type="text" id="mySearch" class="form-control" placeholder="Search for..." onkeypress="if (event.keyCode === 13) searchDiagram()" />
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="diagramModal" role="dialog" aria-labelledby="diagramModalLabel">
+      <div class="modal-dialog" id="modalDialog" role="document">
+        <div class="modal-content">
+          <div id="myModalDiagramDiv" style="background-color: #DAE4E4;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="summaryModal" role="dialog" aria-labelledby="summaryModalLabel">
+      <div class="modal-dialog" id="modalDialog" role="document">
+        <div class="modal-content">
+          <table class="table">
+            <tbody>
+              <tr>
+                <td>Flume Agents</td>
+                <td>{{ summary.flume_agents }}</td>
+              </tr>
+              <tr>
+                <td>Flume Sources</td>
+                <td>{{ summary.flume_sources }}</td>
+              </tr>
+              <tr>
+                <td>Flume Channels</td>
+                <td>{{ summary.flume_channels }}</td>
+              </tr>
+              <tr>
+                <td>Flume Sinks</td>
+                <td>{{ summary.flume_sinks }}</td>
+              </tr>
+              <tr>
+                <td>Kafka Topics</td>
+                <td>{{ summary.kafka_topics }}</td>
+              </tr>
+              <tr>
+                <td>Kafka Consumers</td>
+                <td>{{ summary.kafka_consumers }}</td>
+              </tr>
+              <tr>
+                <td>Hive Tables</td>
+                <td>{{ summary.hive_tables }}</td>
+              </tr>
+              <tr>
+                <td>Hdfs Paths</td>
+                <td>{{ summary.hdfs_paths }}</td>
+              </tr>
+              <tr>
+                <td>ES Indices</td>
+                <td>{{ summary.es_indices }}</td>
+              </tr>
+              <tr>
+                <td>Null节点总量</td>
+                <td>{{ summary.null_counts }}</td>
+              </tr>
+              <tr>
+                <td>本图节点总量</td>
+                <td>{{ summary.total_nodes }}</td>
+              </tr>
+              <tr>
+                <td>本图链接总量</td>
+                <td>{{ summary.total_links }}</td>
+              </tr>
+              <tr>
+                <td>搜索结果总量</td>
+                <td id="searchResultCount">0</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </body>
+
+</html>
