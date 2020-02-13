@@ -263,7 +263,7 @@
               //    //GJ(go.Placeholder)
               //  ),
               //toEndSegmentLength: 30, fromEndSegmentLength: 30,
-			  layout:
+			        layout:
                 GJ(go.GridLayout,
                     { wrappingColumn: 1, alignment: go.GridLayout.Position,
                       cellSize: new go.Size(1, 1), spacing: new go.Size(4, 4) })
@@ -324,7 +324,7 @@
                   name: "OBJSHAPE",
                   //parameter1: 14,
                 },
-                new go.Binding("fill", "isHighlighted", function(h) { return h ? "red" : "#eee5cd"; }).ofObject(),
+                new go.Binding("fill", "isHighlighted", function(h) { return h ? "red" : go.Brush.randomColor(); }).ofObject(),
                 new go.Binding("desiredSize", "ds")),
               GJ(go.Placeholder,
                 { padding: 16 })
@@ -450,6 +450,8 @@
           )
         );
 
+
+        // id:鼠标悬浮时显示详细信息，nick:直接展示的信息，isGroup:true是否是盒子，group：父级盒子的id,type:采用哪种样式，
         var nodeDataArray = [ // node data
           // agentZhe800Log_Rtm
           { id: "Flume.agentZhe800Log_Rtm", nick: "agentZhe800Log_Rtm", isGroup: true, type: "flumeAgent" },
@@ -490,6 +492,8 @@
           { id: "Kafka.bigpipe.nginx_zhe800_log.flume_realtime", nick: "flume_realtime", group: "Kafka.bigpipe.nginx_zhe800_log"},
           { id: "Kafka.bigpipe.nginx_zhe800_log.monitor", nick: "monitor", group: "Kafka.bigpipe.nginx_zhe800_log"},
           { id: "Kafka.bigpipe.real_time_log", nick: "real_time_log", isGroup: true, group: "Kafka.bigpipe",  type: "kafka" },
+          { id: "Kafka.bigpipe.test", nick: "testtesttesttesttesttesttest", group: "Kafka.bigpipe.real_time_log"},
+
 
           // kafka arch_nginx_monitor
           { id: "Kafka.bigpipe.arch_nginx_monitor", nick: "arch_nginx_monitor", isGroup: true, group: "Kafka.bigpipe",  type: "kafka" },
@@ -711,6 +715,7 @@
             var p = findAllParents(node);
             for (var i in p) {nodeList.push(p[i]);}
             for (var i in nodeList) {
+            console.log(nodeList[i].data.id)
               if (! nodeIds.includes(nodeList[i].data.id)) {
                 nodeIds.push[nodeList[i].data.id];
                 myModalDiagram.model.addNodeData(nodeList[i].data);
